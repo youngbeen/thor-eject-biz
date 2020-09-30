@@ -51,11 +51,11 @@
                 :disabled="o.disabled"
                 border>{{ o.label }}</el-radio>
             </el-radio-group>
-            <!-- date类型 -->
-            <el-date-picker v-else-if="item.type === 'date'"
+            <!-- date类型 | datetime类型 -->
+            <el-date-picker v-else-if="item.type === 'date' || item.type === 'datetime'"
               v-model="item.value"
-              type="date"
-              value-format="yyyy-MM-dd"
+              :type="item.type"
+              :value-format="item.type === 'date'? 'yyyy-MM-dd' : 'yyyy-MM-dd HH:mm:ss'"
               :clearable="!item.required"
               :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
               placeholder="请选择"
@@ -85,6 +85,16 @@
             <span v-else-if="item.type === 'label'">
               {{ item.value }}
             </span>
+            <!-- inputNumber类型 -->
+            <el-input-number v-if="item.type === 'inputNumber'"
+              v-model="item.value"
+              :clearable="!item.required"
+              :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
+              :min="(item.inputNumberProps && item.inputNumberProps.min) || Number.NEGATIVE_INFINITY"
+              :max="(item.inputNumberProps && item.inputNumberProps.max) || Number.POSITIVE_INFINITY"
+              :step="(item.inputNumberProps && item.inputNumberProps.step) || 1"
+              :precision="(item.inputNumberProps && item.inputNumberProps.precision) || 0"
+              placeholder="请输入"></el-input-number>
             <!-- TODO 支持其他类型 -->
           </el-form-item>
         </div>
@@ -352,7 +362,7 @@ export default {
         if ((!item.displays || item.displays.includes(this.mode)) && (!item.when || item.when(this.form, this.editPage.fields, this))) {
           // NOTE 检验仅针对显示的字段。因为不显示的字段即使检验不通过，用户也没法修改其值
           let value = item.trim && typeof (item.value) === 'string' ? item.value.trim() : item.value
-          if (item.required && value !== 0 && !value) {
+          if (item.required && typeof (item.value) !== 'boolean' && value !== 0 && !value) {
             this.$message({
               message: `请完善${item.label}`,
               type: 'warning'

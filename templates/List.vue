@@ -34,12 +34,12 @@
                 :disabled="o.disabled">
               </el-option>
             </el-select>
-            <!-- date类型 -->
+            <!-- date类型 | datetime类型 -->
             <el-date-picker
-              v-else-if="item.type === 'date'"
+              v-else-if="item.type === 'date' || item.type === 'datetime'"
               v-model="item.value"
-              type="date"
-              value-format="yyyy-MM-dd"
+              :type="item.type"
+              :value-format="item.type === 'date'? 'yyyy-MM-dd' : 'yyyy-MM-dd HH:mm:ss'"
               :clearable="!item.required"
               placeholder="请选择">
             </el-date-picker>
@@ -379,8 +379,10 @@ export default {
       // 处理参数
       let params = {}
       if (type === 'filterAction') {
-        params = {
-          bizPageId: this.page.bizPageId
+        if (action.type === 'custom' || (action.type === 'router' && ['commonBiz', 'commonBizEdit'].includes(action.target.name))) {
+          params = {
+            bizPageId: this.page.bizPageId
+          }
         }
         if (action.attachParams === undefined || action.attachParams) {
           this.listPage.filters.forEach(item => {
@@ -394,8 +396,10 @@ export default {
           })
         }
       } else if (type === 'tableAction') {
-        params = {
-          bizPageId: this.page.bizPageId
+        if (action.type === 'custom' || (action.type === 'router' && ['commonBiz', 'commonBizEdit'].includes(action.target.name))) {
+          params = {
+            bizPageId: this.page.bizPageId
+          }
         }
         if (action.paramsFields?.length) {
           // 指定参数
@@ -430,8 +434,9 @@ export default {
           // 使用params方式传递参数
           routerObj.params = params
         }
-        let keyObject = {
-          bizPageId: this.page.bizPageId
+        let keyObject = {}
+        if (['commonBiz', 'commonBizEdit'].includes(action.target.name)) {
+          keyObject.bizPageId = this.page.bizPageId
         }
         keyObject[this.page.keyParameter] = params[this.page.keyParameter]
         this.$router.push(Object.assign({}, action.target, {
