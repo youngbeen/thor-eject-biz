@@ -192,7 +192,7 @@ export default {
   //     this.mode = query.mode
   //     this.id = bizParams[keyParameter] || ''
   //     if (this.mode === 'edit' || this.mode === 'detail') {
-  //       this.getData()
+  //       this.getData(bizParams)
   //     }
   //   }
   // },
@@ -213,7 +213,7 @@ export default {
     this.mode = query.mode
     this.id = bizParams[keyParameter] || ''
     if (this.mode === 'edit' || this.mode === 'detail') {
-      this.getData()
+      this.getData(bizParams)
     }
   },
 
@@ -384,12 +384,10 @@ export default {
       }
       return result
     },
-    getData () {
+    getData (params) {
       if (this.loading) {
         return
       }
-      let params = {}
-      params[this.page.keyParameter] = this.id
       this.loading = true
       let option = {
         method: this.editPage.detailApiParams?.method || 'post'
