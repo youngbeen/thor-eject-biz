@@ -22,6 +22,7 @@
               v-model="item.value"
               :clearable="!item.required"
               :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
+              @change="handleChange(item, index)"
               placeholder="请输入"></el-input>
             <!-- select类型 -->
             <el-select v-else-if="item.type === 'select'"
@@ -30,6 +31,7 @@
               :clearable="!item.required"
               filterable
               :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
+              @change="handleChange(item, index)"
               placeholder="请选择"
               style="display: block;">
               <el-option
@@ -43,7 +45,8 @@
             <!-- radio类型 -->
             <el-radio-group v-else-if="item.type === 'radio'"
               v-model="item.value"
-              :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))">
+              :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
+              @change="handleChange(item, index)">
               <el-radio
                 v-for="o in item.options"
                 :key="o.value"
@@ -58,6 +61,7 @@
               :value-format="item.type === 'date'? 'yyyy-MM-dd' : 'yyyy-MM-dd HH:mm:ss'"
               :clearable="!item.required"
               :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
+              @change="handleChange(item, index)"
               placeholder="请选择"
               style="display: block; width: 100%;">
             </el-date-picker>
@@ -69,6 +73,7 @@
               :clearable="!item.required"
               :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
               filterable
+              @change="handleChange(item, index)"
               placeholder="请选择"
               style="display: block;">
             </el-cascader>
@@ -79,7 +84,8 @@
               :active-text="item.options[1].label"
               :inactive-value="item.options[0].value"
               :inactive-text="item.options[0].label"
-              :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))">
+              :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
+              @change="handleChange(item, index)">
             </el-switch>
             <!-- label类型 -->
             <span v-else-if="item.type === 'label'">
@@ -90,6 +96,7 @@
               v-model="item.value"
               :clearable="!item.required"
               :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
+              @change="handleChange(item, index)"
               :min="(item.inputNumberProps && item.inputNumberProps.min) || Number.NEGATIVE_INFINITY"
               :max="(item.inputNumberProps && item.inputNumberProps.max) || Number.POSITIVE_INFINITY"
               :step="(item.inputNumberProps && item.inputNumberProps.step) || 1"
@@ -290,6 +297,38 @@ export default {
         }
       })
       this.editPage = editPage
+    },
+    handleChange (item, index) {
+      // console.log('change', item, index)
+      item.parameter && this.handleTriggerRefreshOptions(item.parameter)
+    },
+    handleTriggerRefreshOptions (fieldName) {
+      // NOTE 目前仅针对select, radio类型做相应选项刷新
+      const _this = this
+      const query = this.$route.query || {}
+      const params = this.$route.params || {}
+      const bizParams = { ...query, ...params }
+      async function queryOptions (item) {
+        item.options = await item.defaultOptions(bizParams, _this)
+        item.value = bizUtil.getTypeValue(item)
+        // NOTE 因为数据层级太深的原因，异步获取后手动update确保视图更新
+        _this.$forceUpdate()
+      }
+
+      this.editPage.fields.forEach(f => {
+        if (['select', 'radio'].includes(f.type) && f.defaultOptions && f.refreshBy && f.refreshBy.length && f.refreshBy.includes(fieldName)) {
+          if (f.defaultOptions) {
+            if (f.async) {
+              // 异步获取默认数据
+              queryOptions(f)
+            } else {
+              // 正常获取
+              f.options = f.defaultOptions(bizParams, this)
+              f.value = bizUtil.getTypeValue(f)
+            }
+          }
+        }
+      })
     },
     handleCancel () {
       this.$router.go(-1)
