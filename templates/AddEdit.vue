@@ -384,15 +384,17 @@ export default {
       }
       return result
     },
-    getData (params) {
+    getData (passParams) {
       if (this.loading) {
         return
       }
+      let params = {}
+      params[this.page.keyParameter] = this.id
       this.loading = true
       let option = {
         method: this.editPage.detailApiParams?.method || 'post'
       }
-      let finalTarget = bizUtil.fixApiTarget(this.editPage.detailTarget, params)
+      let finalTarget = bizUtil.fixApiTarget(this.editPage.detailTarget, passParams)
       customQuery(finalTarget, params, option).then(data => {
         this.loading = false
         if (data && data[system.codeParam] === system.okCode) {
