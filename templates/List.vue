@@ -34,15 +34,23 @@
                 :disabled="o.disabled">
               </el-option>
             </el-select>
-            <!-- date类型 | datetime类型 -->
+            <!-- date | datetime | month类型 -->
             <el-date-picker
-              v-else-if="item.type === 'date' || item.type === 'datetime'"
+              v-else-if="['date', 'datetime', 'month'].includes(item.type)"
               v-model="item.value"
               :type="item.type"
-              :value-format="item.type === 'date'? 'yyyy-MM-dd' : 'yyyy-MM-dd HH:mm:ss'"
+              :value-format="dateFormatMap.get(item.type)"
               :clearable="!item.required"
               placeholder="请选择">
             </el-date-picker>
+            <!-- time类型 -->
+            <el-time-picker
+              v-else-if="item.type === 'time'"
+              v-model="item.value"
+              value-format="HH:mm:ss"
+              :clearable="!item.required"
+              placeholder="请选择">
+            </el-time-picker>
             <!-- cascader类型 -->
             <el-cascader v-else-if="item.type === 'cascader'"
               v-model="item.value"
@@ -208,6 +216,11 @@ export default {
         batchActions: []
       },
       defaultExpands: null,
+      dateFormatMap: new Map([
+        ['date', 'yyyy-MM-dd'],
+        ['datetime', 'yyyy-MM-dd HH:mm:ss'],
+        ['month', 'yyyy-MM']
+      ]),
       user,
       $message: this.$message, // 因为注册问题，这里手动注册用于handler回调
       $alert: this.$alert,

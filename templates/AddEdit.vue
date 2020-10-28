@@ -54,17 +54,29 @@
                 :disabled="o.disabled"
                 border>{{ o.label }}</el-radio>
             </el-radio-group>
-            <!-- date类型 | datetime类型 -->
-            <el-date-picker v-else-if="item.type === 'date' || item.type === 'datetime'"
+            <!-- date | datetime | month类型 -->
+            <el-date-picker
+              v-else-if="['date', 'datetime', 'month'].includes(item.type)"
               v-model="item.value"
               :type="item.type"
-              :value-format="item.type === 'date'? 'yyyy-MM-dd' : 'yyyy-MM-dd HH:mm:ss'"
+              :value-format="dateFormatMap.get(item.type)"
               :clearable="!item.required"
               :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
               @change="handleChange(item, index)"
               placeholder="请选择"
               style="display: block; width: 100%;">
             </el-date-picker>
+            <!-- time类型 -->
+            <el-time-picker
+              v-else-if="item.type === 'time'"
+              v-model="item.value"
+              value-format="HH:mm:ss"
+              :clearable="!item.required"
+              :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
+              @change="handleChange(item, index)"
+              placeholder="请选择"
+              style="display: block; width: 100%;">
+            </el-time-picker>
             <!-- cascader类型 -->
             <el-cascader v-else-if="item.type === 'cascader'"
               v-model="item.value"
@@ -142,6 +154,11 @@ export default {
       editPage: {
         fields: []
       },
+      dateFormatMap: new Map([
+        ['date', 'yyyy-MM-dd'],
+        ['datetime', 'yyyy-MM-dd HH:mm:ss'],
+        ['month', 'yyyy-MM']
+      ]),
       $message: this.$message, // 因为注册问题，这里手动注册用于handler回调
       $alert: this.$alert,
       $confirm: this.$confirm,
