@@ -310,7 +310,12 @@ export default {
         // 处理透传的筛选值
         if (item.parameter !== 'bizPageId' && query[item.parameter]) {
           // query参数中存在带入参数
-          item.value = query[item.parameter]
+          let rawValue = query[item.parameter]
+          if (item.fetchHandler) {
+            item.value = item.fetchHandler(rawValue, this)
+          } else {
+            item.value = rawValue
+          }
         }
       })
       this.editPage = editPage
