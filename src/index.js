@@ -5,7 +5,13 @@ const path = require('path')
 const { prompt } = require('enquirer')
 const style = require('chalk')
 const { readFileContent, changeFileContent } = require('./fileUtil.js')
-const { getValueString, getNextValidChar, wrapValue, digData } = require('./dataUtil.js')
+const {
+  getNextValidChar,
+  digData,
+  getValidBeginIndex,
+  findTargetIndex,
+  findFunctionCloseIndex
+} = require('./dataUtil.js')
 
 const info = style.cyan.bold
 const success = style.green.bold
@@ -16,19 +22,6 @@ const tip = style.gray
 const currentPath = path.resolve('./')
 let pathInfo = path.parse(currentPath)
 const pkgRoot = 'node_modules/thor-eject-biz/'
-
-const analyseTier = (row) => {
-  let tier = 0
-  for (let i = 0; i < row.length; i++) {
-    const char = row[i]
-    if (char === '{') {
-      tier++
-    } else if (char === '}') {
-      tier--
-    }
-  }
-  return tier
-}
 
 const analyseFnOpen = (row) => {
   let tier = 0
@@ -41,31 +34,6 @@ const analyseFnOpen = (row) => {
     }
   }
   return tier
-}
-
-const analyseKeyValue = (row) => {
-  // console.log(row)
-  const colonIndex = row.indexOf(':')
-  let rawKey = row.substring(0, colonIndex)
-  let rawValue = row.substring(colonIndex + 1)
-  let key = rawKey.trim()
-  let value = rawValue.trim()
-  // console.log(key, value)
-  // NOTE 值情况分几种，一种是'或者"包裹的字符串，此时统一处理为"包裹；第二种是{或者[开始的子层，此时不处理；第三种是(开头的函数内容，此时也不处理；其他情况全部不处理
-  let hasComma = value[value.length - 1] === ','
-  hasComma && (value = value.substring(0, value.length - 1))
-  if (value.length >= 2 && value[0] === "'") {
-    let content = value.substring(1, value.length - 1)
-    content = content.replace(/(")/g, '\\$1')
-    value = `"${content}"`
-  }
-  
-  hasComma && (value += ',')
-  return {
-    key,
-    value,
-    string: `"${key}": ${value}`
-  }
 }
 
 const generate = (props) => {
@@ -189,80 +157,142 @@ let rawContent = readFileContent('src/models/SystemConfig.js')
 let configBody = rawContent.match(/(?<=export default )[\s\S]*/)
 configBody.length && (configBody = configBody[0])
 // 去除所有注释
-configBody = configBody.replace(/(?<!:)\/\/.*[\r\n]/g, '')
-
-// 分解为行，并对每行进行JSON化处理
-let rows = configBody.split('\n')
-let tier = 0
-let fnOpen = 0
-rows = rows.map((row, index) => {
-  // 替换\t为2空格
-  row = row.replace(/\t/g, '  ')
-  if (fnOpen <= 0) {
-    // 当前不是函数块内
-    let colonIndex = row.indexOf(':')
-    if (colonIndex > -1) {
-      // console.log(index, row)
-      if (getNextValidChar(row, colonIndex).value === '(') {
-        // 函数行
-        fnOpen += analyseFnOpen(row)
-        let obj = analyseKeyValue(row)
-        row = obj.string
-      } else {
-        // 普通行
-        let obj = analyseKeyValue(row)
-        row = obj.string
-      }
-    } else {
-      // 纯内容行
-      // console.log('纯内容行', row)
-      row = row.replace(/(\s*)(?:')([^']+)(?:')([\s\S]*)/g, '$1"$2"$3')
+configBody = configBody.replace(/(?<!:)\/\/[^\r\n]*/g, '')
+// 去除连续换行
+configBody = configBody.replace(/([\n\r]\s+){2,}/g, '\n')
+// 替换所有制表符
+configBody = configBody.replace(/\t/g, '  ')
+// console.log(111, configBody)
+let wrapperStack = [
+  // {
+  //   identifier: 'object|array|function',
+  //   status: 'key|value|end',
+  // }
+]
+let temp = ''
+for (let i = 0; i < configBody.length; i++) {
+  const c = configBody[i]
+  const currentWrapper = wrapperStack.length ? wrapperStack[wrapperStack.length - 1] : {}
+  if (['\n', '\r', ' ', '\t'].includes(c)) {
+    // 空行等字符
+    temp += c
+    continue
+  }
+  if (c === '{') {
+    // object入栈
+    if (currentWrapper.status === 'value') {
+      currentWrapper.status = 'end'
+    }
+    wrapperStack.push({
+      identifier: 'object',
+      status: 'key'
+    })
+    temp += c
+  } else if (c === '[') {
+    // array入栈
+    if (currentWrapper.status === 'value') {
+      currentWrapper.status = 'end'
+    }
+    wrapperStack.push({
+      identifier: 'array',
+      status: 'value'
+    })
+    temp += c
+  } else if (currentWrapper.identifier === 'object' && c === '}') {
+    // object出栈
+    wrapperStack.pop()
+    temp += c
+  } else if (currentWrapper.identifier === 'array' && c === ']') {
+    // array出栈
+    wrapperStack.pop()
+    temp += c
+  } else if (c === '(' || /^function\s*\(/.test(configBody.substring(i))) {
+    // function内容
+    let endIndex = findFunctionCloseIndex(configBody, i)
+    let functionBody = configBody.substring(i, endIndex + 1)
+    // 去除内容中的换行符
+    functionBody = functionBody.replace(/[\n\r]/g, '')
+    // 转义"
+    functionBody = functionBody.replace(/(")/g, '\\$1')
+    temp += `"${functionBody}"`
+    i = endIndex
+    if (currentWrapper.status === 'value') {
+      currentWrapper.status = 'end'
     }
   } else {
-    // 处于函数块内
-    fnOpen += analyseFnOpen(row)
-  }
-  
-  // 规范缩进
-  row = row.trim()
-  let tierChange = analyseTier(row)
-  if (tierChange < 0) {
-    tier += analyseTier(row)
-  }
-  row = ' '.repeat(tier * 2) + row
-  if (tierChange >= 0) {
-    tier += analyseTier(row)
-  }
-  return row
-})
-// 处理普通key，value格式后
-configBody = rows.join('\n')
-
-// 处理特殊的函数类型，将其转化为字符串形式
-let jsonString = ''
-let tempContent = ''
-for (let i = 0; i < configBody.length; i++) {
-  const char = configBody[i]
-  tempContent += char
-  if (char === ':' && ['('].includes(getNextValidChar(configBody, i).value)) {
-    // 函数类型的值
-    let rawValue = getValueString(configBody, getNextValidChar(configBody, i).index)
-    i = rawValue.endIndex
-    let value = rawValue.value.replace(/[\n\r]/g, '')
-    value = value.replace(/\s{2,}/g, ' ')
-    // console.log('value', value)
-    jsonString += `${tempContent} ${wrapValue(value)}`
-    tempContent = ''
+    // 其他正常流程
+    if (currentWrapper.identifier === 'object') {
+      if (currentWrapper.status === 'key') {
+        // 寻找object key
+        let colonIndex = findTargetIndex(configBody, ':', i)
+        let keyName = configBody.substring(i, colonIndex)
+        temp += `"${keyName}":`
+        i = colonIndex
+        currentWrapper.status = 'value'
+      } else if (currentWrapper.status === 'value') {
+        // 寻找object value
+        if (["'", '"'].includes(c)) {
+          // 字符串类型值
+          let quoteIndex = findTargetIndex(configBody, c, i + 1)
+          let valueString = configBody.substring(i + 1, quoteIndex)
+          // 转义"
+          valueString = valueString.replace(/(")/g, '\\$1')
+          temp += `"${valueString}"`
+          i = quoteIndex
+          currentWrapper.status = 'end'
+        } else {
+          // 其他类型值
+          let endIndex = findTargetIndex(configBody, [' ', '\n', '\t', '\r', ','], i + 1)
+          let valueString = configBody.substring(i, endIndex)
+          temp += valueString
+          i = endIndex - 1
+          currentWrapper.status = 'end'
+        }
+      } else if (currentWrapper.status === 'end' && c === ',') {
+        currentWrapper.status = 'key'
+        if (['}', ']'].includes(getNextValidChar(configBody, i + 1).value)) {
+          // 多余的,
+        } else {
+          temp += c
+        }
+      }
+    } else if (currentWrapper.identifier === 'array') {
+      if (currentWrapper.status === 'value') {
+        // 寻找array value
+        if (["'", '"'].includes(c)) {
+          // 字符串类型值
+          let quoteIndex = findTargetIndex(configBody, c, i + 1)
+          let valueString = configBody.substring(i + 1, quoteIndex)
+          // 转义"
+          valueString = valueString.replace(/(")/g, '\\$1')
+          temp += `"${valueString}"`
+          i = quoteIndex
+          currentWrapper.status = 'end'
+        } else {
+          // 其他类型值
+          let endIndex = findTargetIndex(configBody, [' ', '\n', '\t', '\r', ','], i + 1)
+          let valueString = configBody.substring(i, endIndex)
+          temp += valueString
+          i = endIndex - 1
+          currentWrapper.status = 'end'
+        }
+      } else if (currentWrapper.status === 'end' && c === ',') {
+        currentWrapper.status = 'value'
+        if (['}', ']'].includes(getNextValidChar(configBody, i + 1).value)) {
+          // 多余的,
+        } else {
+          temp += c
+        }
+      }
+    } else {
+      temp += c
+    }
   }
 }
-if (tempContent) {
-  jsonString += tempContent
-  tempContent = ''
-}
-console.log('结果', jsonString)
+// console.log('结果', temp)
 
 // #2 得到转化的js数据后，开始进行交互询问
-const config = JSON.parse(jsonString)
+const config = JSON.parse(temp)
 let bizPageId = ''
 let bizData = {} // 当前导出的业务配置page object
 let bizName = '' // 导出的业务英文命名

@@ -6,53 +6,10 @@ const pairMap = {
   '[': ']'
 }
 
-const getValueString = (string, fromIndex) => {
-  // ' " (
-  const tag = string[fromIndex]
-  let stack = [tag === '(' ? ')' : tag]
-  for (let i = fromIndex + 1; i < string.length; i++) {
-    const char = string[i]
-    if (['(', '{', '['].includes(char)) {
-      // 需要继续入栈
-      stack.push(pairMap[char])
-    } else {
-      if (stack.length) {
-        // 栈中有数据
-        if (char === stack[stack.length - 1]) {
-          stack.pop()
-          if (!stack.length) {
-            // 已无数据
-            if ([',', '}', ']'].includes(getNextValidChar(string, i).value)) {
-              // 结束
-              return {
-                value: string.substring(fromIndex, i + 1),
-                endIndex: i
-              }
-            }
-          }
-        }
-      } else {
-        // 栈中无数据
-        if ([',', '}', ']'].includes(getNextValidChar(string, i).value)) {
-          // 结束
-          return {
-            value: string.substring(fromIndex, i + 1),
-            endIndex: i
-          }
-        }
-      }
-    }
-  }
-  return {
-    value: string.substring(fromIndex),
-    endIndex: string.length - 1
-  }
-}
-
 const getNextValidChar = (string, fromIndex) => {
-  for (let i = fromIndex + 1; i < string.length; i++) {
+  for (let i = fromIndex; i < string.length; i++) {
     const char = string[i]
-    if (char !== ' ') {
+    if (!['\n', '\r', ' ', '\t'].includes(char)) {
       return {
         value: char,
         index: i
@@ -62,20 +19,6 @@ const getNextValidChar = (string, fromIndex) => {
   return {
     value: null,
     index: -1
-  }
-}
-
-const wrapValue = (raw) => {
-  if (raw.length >= 2 && raw[0] === "'") {
-    let content = raw.substring(1, raw.length - 1)
-    content = content.replace(/(")/g, '\\$1')
-    return `"${content}"`
-  } else if (raw[0] === '"') {
-    return raw
-  } else {
-    // 方法类型，手动包装"
-    raw = raw.replace(/(")/g, '\\$1')
-    return `"${raw}"`
   }
 }
 
@@ -123,11 +66,61 @@ const digData = (data, fields = []) => {
   }
 }
 
+const findTargetIndex = (string, target, from = 0) => {
+  let targets = []
+  if (typeof (target) === 'string') {
+    targets.push(target)
+  } else {
+    targets = [...target]
+  }
+  for (let i = from; i < string.length; i++) {
+    const char = string[i]
+    if (targets.includes(char)) {
+      return i
+    }
+  }
+  return -1
+}
+
+const findFunctionCloseIndex = (string, from = 0) => {
+  // NOTE 方法内容必须先经过一个(和一个)，之后开始计算tier层级，每个({[增加1，每个]})减少1，当层级为0时，碰到英文逗号或者]})则认为结束
+  let foundOpenParenthese = false
+  let foundCloseParenthese = false
+  let tier = 0
+  let possibleEndIndex = 0
+  for (let i = from; i < string.length; i++) {
+    const char = string[i]
+    if (foundOpenParenthese) {
+      if (foundCloseParenthese) {
+        if (tier <= 0 && [',', '}', ']', ')'].includes(char)) {
+          // 找到结束
+          // return i - 1
+          return possibleEndIndex
+        } else {
+          if (['{', '[', '('].includes(char)) {
+            tier++
+          } else if (['}', ']', ')'].includes(char)) {
+            tier--
+          }
+        }
+        if (!['\n', '\r', ' ', '\t'].includes(char)) {
+          possibleEndIndex = i
+        }
+      } else if (char === ')') {
+        foundCloseParenthese = true
+      }
+    } else if (char === '(') {
+      foundOpenParenthese = true
+    }
+  }
+  return -1
+}
+
 module.exports = {
-  getValueString,
   getNextValidChar,
-  wrapValue,
   getValueType,
   getValidBeginIndex,
+  findTargetIndex,
+  findFunctionCloseIndex,
   digData
 }
