@@ -21,6 +21,7 @@
             <el-input v-if="item.type === 'input'"
               v-model="item.value"
               :clearable="!item.required"
+              :maxlength="item.maxlength || ''"
               :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
               @change="handleChange(item, index)"
               placeholder="请输入"></el-input>
@@ -243,7 +244,6 @@ export default {
 
   methods: {
     initData () {
-      const _this = this
       const query = this.$route.query || {}
       const params = this.$route.params || {}
       const bizParams = { ...query, ...params }
@@ -277,10 +277,10 @@ export default {
         size
       }
       // 处理初始值
-      async function queryOptions (item) {
-        item.options = await item.defaultOptions(bizParams, _this)
+      const queryOptions = async (item) => {
+        item.options = await item.defaultOptions(bizParams, this)
         // NOTE 因为数据层级太深的原因，异步获取后手动update确保视图更新
-        _this.$forceUpdate()
+        this.$forceUpdate()
       }
       editPage.fields.forEach(item => {
         // NOTE 新增/编辑/详情共用同一页面，先始终清理脏数据
@@ -326,15 +326,14 @@ export default {
     },
     handleTriggerRefreshOptions (fieldName) {
       // NOTE 目前仅针对select, radio类型做相应选项刷新
-      const _this = this
       const query = this.$route.query || {}
       const params = this.$route.params || {}
       const bizParams = { ...query, ...params }
-      async function queryOptions (item) {
-        item.options = await item.defaultOptions(bizParams, _this)
+      const queryOptions = async (item) => {
+        item.options = await item.defaultOptions(bizParams, this)
         item.value = bizUtil.getTypeValue(item)
         // NOTE 因为数据层级太深的原因，异步获取后手动update确保视图更新
-        _this.$forceUpdate()
+        this.$forceUpdate()
       }
 
       this.editPage.fields.forEach(f => {

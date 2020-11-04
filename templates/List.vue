@@ -17,6 +17,7 @@
             <!-- input类型 -->
             <el-input v-if="item.type === 'input'"
               v-model="item.value"
+              :maxlength="item.maxlength || ''"
               :clearable="!item.required"
               placeholder="请输入"></el-input>
             <!-- select类型 -->
@@ -271,7 +272,6 @@ export default {
       this.selections = []
       this.list = []
       this.defaultExpands = null
-      const _this = this
       const query = this.$route.query || {}
       // if (!query.bizPageId) {
       //   this.$message({
@@ -308,10 +308,10 @@ export default {
       listPage.tableFields = listPage.tableFields || []
       listPage.tableActions = listPage.tableActions || []
       listPage.batchActions = listPage.batchActions || []
-      async function queryOptions (item) {
-        item.options = await item.defaultOptions(query, _this)
+      const queryOptions = async (item) => {
+        item.options = await item.defaultOptions(query, this)
         // NOTE 因为数据层级太深的原因，异步获取后手动update确保视图更新
-        _this.$forceUpdate()
+        this.$forceUpdate()
       }
       listPage.filters.forEach(item => {
         // 先始终清理脏数据
