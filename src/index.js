@@ -38,66 +38,18 @@ const analyseFnOpen = (row) => {
 
 const generate = (props) => {
   fs.ensureDir(`src/views/${props.bizName}`).then(() => {
-    // 拷贝模板List
-    return fs.copy(`${pkgRoot}templates/List.vue`, `src/views/${props.bizName}/List.vue`)
-  }).then(() => {
-    changeFileContent(`src/views/${props.bizName}/List.vue`, (content) => {
-      // // 处理筛选栏
-      // if ((props.bizData.listPage.filters && props.bizData.listPage.filters.length) || (props.bizData.listPage.filterActions && props.bizData.listPage.filterActions.length) || (props.bizData.listPage.batchActions && props.bizData.listPage.batchActions.length)) {
-      //   // 有筛选栏
-      //   content = content.replace(/\*template:{ListFilter}/, readFileContent(`${pkgRoot}templates/ListFilter.tmpl`))
-      // } else {
-      //   // 无筛选栏
-      //   content = content.replace(/\*template:{ListFilter}/, '')
-      // }
-      // 替换参数
-      content = content.replace(/\*param:{\w+.?\w*(=[^}]*)?}/g, (match) => {
-        let [params, defaultValue] = match.match(/(?<={)\w+.?\w*(=[^}]*)?(?=})/)[0].split('=')
-        let chain = params.split('.')
-        return (digData(props, chain) || defaultValue)
-      })
-      // 替换page内容
-      let rawContent = readFileContent('src/models/SystemConfig.js')
-      let rows = rawContent.split('\n')
-      let newRows = []
-      let flag = false
-      let wrapperStack = 0
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i]
-        if (flag) {
-          wrapperStack += analyseFnOpen(row)
-          newRows.push(row)
-          if (wrapperStack < 0) {
-            break
-          }
-        } else if (row.search(new RegExp("bizPageId:\\s*'" + props.bizPageId + "'")) > -1) {
-          flag = true
-          newRows.push(rows[i - 1])
-          newRows.push(row)
-        }
-      }
-      content = content.replace(/\*page:{page}/, newRows.join('\n'))
-      // 加入替换依赖
-      newRows = []
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i]
-        if (row.search(/\s*export[\s\S]*/) > -1) {
-          break
-        }
-        let slimRow = row.trim()
-        if (slimRow && content.indexOf(slimRow) === -1) {
-          newRows.push(row)
-        }
-      }
-      content = content.replace(/\*import:{import}/, newRows.join('\n'))
-      return content
-    })
-    console.log(success(`src/views/${props.bizName}/List.vue已导出`))
-
-    // 编辑页面模板
-    if (props.bizData.editPage.detailTarget) {
-      fs.copySync(`${pkgRoot}templates/AddEdit.vue`, `src/views/${props.bizName}/AddEdit.vue`)
-      changeFileContent(`src/views/${props.bizName}/AddEdit.vue`, (content) => {
+    if (props.bizData.listPage && props.bizData.listPage.listTarget) {
+      // 拷贝模板List
+      fs.copySync(`${pkgRoot}templates/List.vue`, `src/views/${props.bizName}/List.vue`)
+      changeFileContent(`src/views/${props.bizName}/List.vue`, (content) => {
+        // // 处理筛选栏
+        // if ((props.bizData.listPage.filters && props.bizData.listPage.filters.length) || (props.bizData.listPage.filterActions && props.bizData.listPage.filterActions.length) || (props.bizData.listPage.batchActions && props.bizData.listPage.batchActions.length)) {
+        //   // 有筛选栏
+        //   content = content.replace(/\*template:{ListFilter}/, readFileContent(`${pkgRoot}templates/ListFilter.tmpl`))
+        // } else {
+        //   // 无筛选栏
+        //   content = content.replace(/\*template:{ListFilter}/, '')
+        // }
         // 替换参数
         content = content.replace(/\*param:{\w+.?\w*(=[^}]*)?}/g, (match) => {
           let [params, defaultValue] = match.match(/(?<={)\w+.?\w*(=[^}]*)?(?=})/)[0].split('=')
@@ -140,13 +92,62 @@ const generate = (props) => {
         content = content.replace(/\*import:{import}/, newRows.join('\n'))
         return content
       })
-      console.log(success(`src/views/${props.bizName}/AddEdit.vue已导出`))
-    }
+      console.log(success(`src/views/${props.bizName}/List.vue已导出`))
 
-    console.log(success('所有任务完成'))
-    console.log(important('请注意：'))
-    console.log(important('1. 你需要自行添加导出的业务页面路由'))
-    console.log(important(`2. 如果碰到页面存在大量lint错误，一般是因为配置数据不规范。请先自行确保源配置数据符合规范，此外你可以尝试使用 ${info('npm run lint')} 命令自动修复lint错误`))
+      // 编辑页面模板
+      if (props.bizData.editPage && props.bizData.editPage.detailTarget) {
+        fs.copySync(`${pkgRoot}templates/AddEdit.vue`, `src/views/${props.bizName}/AddEdit.vue`)
+        changeFileContent(`src/views/${props.bizName}/AddEdit.vue`, (content) => {
+          // 替换参数
+          content = content.replace(/\*param:{\w+.?\w*(=[^}]*)?}/g, (match) => {
+            let [params, defaultValue] = match.match(/(?<={)\w+.?\w*(=[^}]*)?(?=})/)[0].split('=')
+            let chain = params.split('.')
+            return (digData(props, chain) || defaultValue)
+          })
+          // 替换page内容
+          let rawContent = readFileContent('src/models/SystemConfig.js')
+          let rows = rawContent.split('\n')
+          let newRows = []
+          let flag = false
+          let wrapperStack = 0
+          for (let i = 0; i < rows.length; i++) {
+            const row = rows[i]
+            if (flag) {
+              wrapperStack += analyseFnOpen(row)
+              newRows.push(row)
+              if (wrapperStack < 0) {
+                break
+              }
+            } else if (row.search(new RegExp("bizPageId:\\s*'" + props.bizPageId + "'")) > -1) {
+              flag = true
+              newRows.push(rows[i - 1])
+              newRows.push(row)
+            }
+          }
+          content = content.replace(/\*page:{page}/, newRows.join('\n'))
+          // 加入替换依赖
+          newRows = []
+          for (let i = 0; i < rows.length; i++) {
+            const row = rows[i]
+            if (row.search(/\s*export[\s\S]*/) > -1) {
+              break
+            }
+            let slimRow = row.trim()
+            if (slimRow && content.indexOf(slimRow) === -1) {
+              newRows.push(row)
+            }
+          }
+          content = content.replace(/\*import:{import}/, newRows.join('\n'))
+          return content
+        })
+        console.log(success(`src/views/${props.bizName}/AddEdit.vue已导出`))
+      }
+
+      console.log(success('所有任务完成'))
+      console.log(important('请注意：'))
+      console.log(important('1. 你需要自行添加导出的业务页面路由'))
+      console.log(important(`2. 如果碰到页面存在大量lint错误，一般是因为配置数据不规范。请先自行确保源配置数据符合规范，此外你可以尝试使用 ${info('npm run lint')} 命令自动修复lint错误`))
+    }
   }).catch(err => {
     console.error(error(err))
   })
