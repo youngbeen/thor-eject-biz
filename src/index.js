@@ -271,7 +271,7 @@ for (let i = 0; i < configBody.length; i++) {
           currentWrapper.status = 'end'
         } else {
           // 其他类型值
-          let endIndex = findTargetIndex(configBody, [' ', '\n', '\t', '\r', ','], i + 1)
+          let endIndex = findTargetIndex(configBody, [' ', '\n', '\t', '\r', ',', ']'], i + 1)
           let valueString = configBody.substring(i, endIndex)
           temp += valueString
           i = endIndex - 1
