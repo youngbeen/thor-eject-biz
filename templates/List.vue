@@ -117,7 +117,7 @@
             :key="Math.random()">
           </el-table-column>
           <el-table-column
-            v-for="item in listPage.tableFields"
+            v-for="item in displayedTableFields"
             :key="item.parameter"
             :prop="item.parameter"
             :label="item.label"
@@ -241,6 +241,9 @@ export default {
       } else {
         return {}
       }
+    },
+    displayedTableFields () {
+      return this.listPage.tableFields.filter(item => !item.when || item.when(this.form, this.listPage.filters, this))
     }
   },
   // watch: {
