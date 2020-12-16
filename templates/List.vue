@@ -564,7 +564,7 @@ export default {
             let rootNode = {
               children: []
             }
-            rootNode[this.page.keyParameter] = 0
+            rootNode[this.page.keyParameter] = system.rootNodeKeyValue
             let originalList = bizUtil.createTree(rootNode, list, this.page.keyParameter)
             this.list = originalList.children || []
             if (['all', 'no'].includes(this.listPage.treeExpendMode)) {
