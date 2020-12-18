@@ -24,7 +24,7 @@
               :maxlength="item.maxlength || ''"
               :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
               @change="handleChange(item, index)"
-              placeholder="请输入"></el-input>
+              placeholder=""></el-input>
             <!-- select类型 -->
             <el-select v-else-if="item.type === 'select'"
               v-model="item.value"
@@ -33,7 +33,7 @@
               filterable
               :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
               @change="handleChange(item, index)"
-              placeholder="请选择"
+              placeholder=""
               style="display: block;">
               <el-option
                 v-for="o in item.options"
@@ -64,7 +64,7 @@
               :clearable="!item.required"
               :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
               @change="handleChange(item, index)"
-              placeholder="请选择"
+              placeholder=""
               style="display: block; width: 100%;">
             </el-date-picker>
             <!-- time类型 -->
@@ -75,7 +75,7 @@
               :clearable="!item.required"
               :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
               @change="handleChange(item, index)"
-              placeholder="请选择"
+              placeholder=""
               style="display: block; width: 100%;">
             </el-time-picker>
             <!-- cascader类型 -->
@@ -87,7 +87,7 @@
               :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
               filterable
               @change="handleChange(item, index)"
-              placeholder="请选择"
+              placeholder=""
               style="display: block;">
             </el-cascader>
             <!-- switch类型 -->
@@ -114,7 +114,7 @@
               :max="(item.inputNumberProps && item.inputNumberProps.max) || Number.POSITIVE_INFINITY"
               :step="(item.inputNumberProps && item.inputNumberProps.step) || 1"
               :precision="(item.inputNumberProps && item.inputNumberProps.precision) || 0"
-              placeholder="请输入"></el-input-number>
+              placeholder=""></el-input-number>
             <!-- TODO 支持其他类型 -->
           </el-form-item>
         </div>

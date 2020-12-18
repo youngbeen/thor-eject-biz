@@ -19,14 +19,14 @@
               v-model="item.value"
               :maxlength="item.maxlength || ''"
               :clearable="!item.required"
-              placeholder="请输入"></el-input>
+              placeholder=""></el-input>
             <!-- select类型 -->
             <el-select v-else-if="item.type === 'select'"
               v-model="item.value"
               :multiple="item.multiple"
               filterable
               :clearable="!item.required"
-              placeholder="请选择">
+              placeholder="">
               <el-option
                 v-for="o in item.options"
                 :key="o.value"
@@ -42,7 +42,7 @@
               :type="item.type"
               :value-format="dateFormatMap.get(item.type)"
               :clearable="!item.required"
-              placeholder="请选择">
+              placeholder="">
             </el-date-picker>
             <!-- time类型 -->
             <el-time-picker
@@ -50,7 +50,7 @@
               v-model="item.value"
               value-format="HH:mm:ss"
               :clearable="!item.required"
-              placeholder="请选择">
+              placeholder="">
             </el-time-picker>
             <!-- cascader类型 -->
             <el-cascader v-else-if="item.type === 'cascader'"
@@ -59,7 +59,7 @@
               :props="{ checkStrictly: item.nodeSelectable, lazy: Boolean(item.lazyOptions), lazyLoad: item.lazyOptions }"
               filterable
               :clearable="!item.required"
-              placeholder="请选择">
+              placeholder="">
             </el-cascader>
             <!-- TODO 支持其他种类 -->
           </el-form-item>
@@ -106,15 +106,13 @@
           <el-table-column
             type="selection"
             v-if="listPage.batchActions.length"
-            width="55"
-            :key="Math.random()">
+            width="55">
           </el-table-column>
           <el-table-column
             v-if="listPage.hasIndex === undefined || listPage.hasIndex"
             type="index"
             label="序号"
-            width="50"
-            :key="Math.random()">
+            width="50">
           </el-table-column>
           <el-table-column
             v-for="item in displayedTableFields"
