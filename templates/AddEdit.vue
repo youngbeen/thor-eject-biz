@@ -16,7 +16,7 @@
           :key="index">
           <el-form-item
             :class="[mode !== 'detail' && item.required && 'is-required']"
-            :label="item.label">
+            :label="item.foreignKey ? t(item.foreignKey) : item.label">
             <!-- input类型 -->
             <el-input v-if="item.type === 'input'"
               v-model="item.value"
@@ -122,11 +122,11 @@
           <el-button type="primary"
             v-if="['add', 'edit'].includes(mode) && editPage.submit"
             :disabled="loading"
-            @click="handleSave()">确定</el-button>
+            @click="handleSave()">{{ t('button.confirm') }}</el-button>
           <el-button v-if="['add', 'edit'].includes(mode) && editPage.submit"
-            @click="handleCancel()">取消</el-button>
+            @click="handleCancel()">{{ t('button.cancel') }}</el-button>
           <el-button type="primary" v-else
-            @click="handleCancel()">返回</el-button>
+            @click="handleCancel()">{{ t('button.back') }}</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -138,6 +138,7 @@
 import { customQuery } from '@/api/common'
 import system from '@/models/system'
 import bizUtil from '@/utils/CommonBizUtil'
+import { t } from '@/utils/i18nUtil'
 *import:{import}
 
 export default {
@@ -150,6 +151,7 @@ export default {
         // bizPageId: '',
         // keyParameter: '',
         // name: '', // 业务名称，必选
+        // foreignKey: '',
         // size: ''
       },
       editPage: {
@@ -160,6 +162,7 @@ export default {
         ['datetime', 'yyyy-MM-dd HH:mm:ss'],
         ['month', 'yyyy-MM']
       ]),
+      t,
       $message: this.$message, // 因为注册问题，这里手动注册用于handler回调
       $alert: this.$alert,
       $confirm: this.$confirm,
@@ -181,11 +184,11 @@ export default {
     },
     pageTitle () {
       if (this.mode === 'detail') {
-        return `${this.page.name}详情`
+        return `${this.page.foreignKey ? t(this.page.foreignKey) : this.page.name}${t('label.detailPage')}`
       } else if (this.mode === 'add') {
-        return `新增${this.page.name}`
+        return `${t('label.addPage')}${this.page.foreignKey ? t(this.page.foreignKey) : this.page.name}`
       } else if (this.mode === 'edit') {
-        return `编辑${this.page.name}`
+        return `${t('label.editPage')}${this.page.foreignKey ? t(this.page.foreignKey) : this.page.name}`
       } else {
         return ''
       }
@@ -211,7 +214,7 @@ export default {
   //     const params = this.$route.params || {}
   //     const bizParams = { ...query, ...params }
   //     if (!query.mode || (query.mode === 'edit' && !bizParams[keyParameter])) {
-  //       this.$message('非法访问，请退出重试')
+  //       this.$message(t('msg.missingKeyParameter'))
   //       return false
   //     }
   //     this.mode = query.mode
@@ -232,7 +235,7 @@ export default {
     const params = this.$route.params || {}
     const bizParams = { ...query, ...params }
     if (!query.mode || (query.mode === 'edit' && !bizParams[keyParameter])) {
-      this.$message('非法访问，请退出重试')
+      this.$message(t('msg.missingKeyParameter'))
       return false
     }
     this.mode = query.mode
@@ -249,7 +252,7 @@ export default {
       const bizParams = { ...query, ...params }
       // if (!bizParams.bizPageId) {
       //   this.$message({
-      //     message: '非法访问，请退出重试',
+      //     message: t('msg.missingKeyParameter'),
       //     type: 'error'
       //   })
       //   return false
@@ -264,16 +267,17 @@ export default {
       // }
       // if (!page) {
       //   this.$message({
-      //     message: '不存在的业务，请确认业务id并退出重试',
+      //     message: t('msg.invalidBizpageid'),
       //     type: 'error'
       //   })
       //   return false
       // }
-      let { bizPageId, keyParameter = 'id', name, size, editPage } = page
+      let { bizPageId, keyParameter = 'id', name, foreignKey, size, editPage } = page
       this.page = {
         bizPageId,
         keyParameter,
         name,
+        foreignKey,
         size
       }
       // 处理初始值
@@ -304,7 +308,7 @@ export default {
           // 开关的选项不合法，配置为默认
           item.options = [
             { label: '', value: false },
-            { label: '开启', value: true }
+            { label: t('label.switchOn'), value: true }
           ]
         }
         // 处理透传的筛选值
@@ -395,7 +399,7 @@ export default {
           } else {
             // 内置回调处理
             this.$message({
-              message: `${this.mode === 'edit' ? '编辑' : '添加'}成功`,
+              message: t(`msg.${this.mode}Success`),
               type: 'success'
             })
             this.$router.go(-1)
@@ -410,7 +414,7 @@ export default {
         console.error(error)
         this.loading = false
         this.$message({
-          message: `请求失败！请稍后重试 (${error})`,
+          message: `${t('msg.ajaxError')} (${error})`,
           type: 'error'
         })
       })
@@ -424,7 +428,7 @@ export default {
           let value = item.trim && typeof (item.value) === 'string' ? item.value.trim() : item.value
           if (item.required && typeof (item.value) !== 'boolean' && value !== 0 && !value) {
             this.$message({
-              message: `请完善${item.label}`,
+              message: `${t('msg.shouldFinish')}${item.foreignKey ? t(item.foreignKey) : item.label}`,
               type: 'warning'
             })
             result = false
@@ -482,7 +486,7 @@ export default {
         console.error(error)
         this.loading = false
         this.$message({
-          message: `请求失败，请稍后重试(${error})`,
+          message: `${t('msg.ajaxError')} (${error})`,
           type: 'error'
         })
       })

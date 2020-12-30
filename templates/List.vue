@@ -1,7 +1,7 @@
 <template>
   <section class="page-*param:{bizName}-list">
     <div class="cs-content-block">
-      <div class="cs-page-title" v-if="page.name">{{ page.name }}列表</div>
+      <div class="cs-page-title" v-if="page.foreignKey || page.name">{{ page.foreignKey ? t(page.foreignKey) : page.name }}{{ t('label.listPage') }}</div>
       <!-- 筛选栏 -->
       <div class="box-filters"
         v-if="listPage.filters.length || listPage.filterActions.length || listPage.batchActions.length">
@@ -13,7 +13,7 @@
             v-show="!item.when || item.when(form, listPage.filters, this)"
             v-for="item in listPage.filters"
             :key="item.parameter"
-            :label="item.label">
+            :label="item.foreignKey ? t(item.foreignKey) : item.label">
             <!-- input类型 -->
             <el-input v-if="item.type === 'input'"
               v-model="item.value"
@@ -65,19 +65,19 @@
           </el-form-item>
           <el-form-item v-if="listPage.filters.length && (listPage.hasSearch === undefined || listPage.hasSearch)">
             <el-button type="primary" @click="search()">
-              <font-awesome-icon :icon="['fas', 'search']" />&nbsp;查询
+              <font-awesome-icon :icon="['fas', 'search']" />&nbsp;{{ t('button.query') }}
             </el-button>
           </el-form-item>
           <el-form-item v-if="listPage.filters.length && (listPage.hasSearch === undefined || listPage.hasSearch)">
             <el-button type="default" @click="reset()">
-              重置
+              {{ t('button.reset') }}
             </el-button>
           </el-form-item>
           <!-- 筛选栏操作 -->
           <el-form-item v-show="hasPermission(action.permissionKey) && (!action.when || action.when(form, this))"
             v-for="(action, index) in listPage.filterActions" :key="'fa-' + index">
             <el-button :type="action.style" @click="handleActionConfirm($event, 'filterAction', action, form)">
-              {{ action.label }}
+              {{ action.foreignKey ? t(action.foreignKey) : action.label }}
             </el-button>
           </el-form-item>
           <!-- 表格批量操作 -->
@@ -87,14 +87,14 @@
               :type="action.style || 'primary'"
               :disabled="action.disabled && action.disabled(selections, this)"
               @click="handleActionConfirm($event, 'batchAction', action, selections)">
-              {{ action.label }}
+              {{ action.foreignKey ? t(action.foreignKey) : action.label }}
             </el-button>
           </el-form-item>
         </el-form>
       </div>
 
       <!-- 列表栏 -->
-      <div class="box-list" v-if="page.name">
+      <div class="box-list" v-if="page.foreignKey || page.name">
         <el-table
           :data="list"
           v-loading="loading"
@@ -111,14 +111,14 @@
           <el-table-column
             v-if="listPage.hasIndex === undefined || listPage.hasIndex"
             type="index"
-            label="序号"
-            width="50">
+            :label="t('label.indexName')"
+            width="60">
           </el-table-column>
           <el-table-column
             v-for="item in displayedTableFields"
             :key="item.parameter"
             :prop="item.parameter"
-            :label="item.label"
+            :label="item.foreignKey ? t(item.foreignKey) : item.label"
             :align="item.align || 'left'"
             :width="item.width || ''"
             :sortable="Boolean(item.sortable)"
@@ -148,7 +148,7 @@
           </el-table-column>
           <el-table-column
             fixed="right"
-            label="操作"
+            :label="t('label.operation')"
             v-if="listPage.tableActions.length"
             :min-width="listPage.tableActionWidth || listPage.tableActions.length * 80">
             <template slot-scope="scope">
@@ -157,7 +157,7 @@
                   :type="action.style || 'primary'"
                   :size="listPage.tableActionSize || 'mini'"
                   @click="handleActionConfirm($event, 'tableAction', action, scope.row)"
-                  style="margin-right: 6px;">{{ action.label }}</el-button>
+                  style="margin-right: 6px;">{{ action.foreignKey ? t(action.foreignKey) : action.label }}</el-button>
               </span>
             </template>
           </el-table-column>
@@ -188,6 +188,7 @@ import { customQuery } from '@/api/common'
 import system from '@/models/system'
 import user from '@/models/user'
 import bizUtil from '@/utils/CommonBizUtil'
+import { t } from '@/utils/i18nUtil'
 *import:{import}
 
 export default {
@@ -205,6 +206,7 @@ export default {
         // bizPageId: '',
         // keyParameter: '',
         // name: '', // 业务名称，必选
+        // foreignKey: '',
         // size: ''
       },
       listPage: {
@@ -221,6 +223,7 @@ export default {
         ['month', 'yyyy-MM']
       ]),
       user,
+      t,
       $message: this.$message, // 因为注册问题，这里手动注册用于handler回调
       $alert: this.$alert,
       $confirm: this.$confirm,
@@ -276,7 +279,7 @@ export default {
       const query = this.$route.query || {}
       // if (!query.bizPageId) {
       //   this.$message({
-      //     message: '非法访问，请退出重试',
+      //     message: t('msg.missingKeyParameter'),
       //     type: 'error'
       //   })
       //   return false
@@ -291,16 +294,17 @@ export default {
       // }
       // if (!page) {
       //   this.$message({
-      //     message: '不存在的业务，请确认业务id并退出重试',
+      //     message: t('msg.invalidBizpageid'),
       //     type: 'error'
       //   })
       //   return false
       // }
-      let { bizPageId, keyParameter = 'id', name, size, listPage } = page
+      let { bizPageId, keyParameter = 'id', name, foreignKey, size, listPage } = page
       this.page = {
         bizPageId,
         keyParameter,
         name,
+        foreignKey,
         size
       }
       // 处理初始值
@@ -486,7 +490,7 @@ export default {
           console.error(error)
           this.loading = false
           this.$message({
-            message: `请求失败，请稍后重试(${error})`,
+            message: `${t('msg.ajaxError')} (${error})`,
             type: 'error'
           })
         })
@@ -504,7 +508,7 @@ export default {
           let value = item.trim && typeof (item.value) === 'string' ? item.value.trim() : item.value
           if (item.required && !value) {
             this.$message({
-              message: `请完善${item.label}`,
+              message: `${t('msg.shouldFinish')}${item.foreignKey ? t(item.foreignKey) : item.label}`,
               type: 'warning'
             })
             result = false
@@ -586,7 +590,7 @@ export default {
         console.error(error)
         this.loading = false
         this.$message({
-          message: `请求失败，请稍后重试(${error})`,
+          message: `${t('msg.ajaxError')} (${error})`,
           type: 'error'
         })
       })
