@@ -173,7 +173,7 @@ export default {
   computed: {
     form () {
       if (this.editPage.fields) {
-        let result = {}
+        const result = {}
         this.editPage.fields.forEach(f => {
           result[f.parameter] = f.value
         })
@@ -272,7 +272,7 @@ export default {
       //   })
       //   return false
       // }
-      let { bizPageId, keyParameter = 'id', name, foreignKey, size, editPage } = page
+      const { bizPageId, keyParameter = 'id', name, foreignKey, size, editPage } = page
       this.page = {
         bizPageId,
         keyParameter,
@@ -314,7 +314,7 @@ export default {
         // 处理透传的筛选值
         if (item.parameter !== 'bizPageId' && query[item.parameter]) {
           // query参数中存在带入参数
-          let rawValue = query[item.parameter]
+          const rawValue = query[item.parameter]
           if (item.fetchHandler) {
             item.value = item.fetchHandler(rawValue, this)
           } else {
@@ -365,7 +365,7 @@ export default {
       if (!this.verify()) {
         return
       }
-      let params = {}
+      const params = {}
       this.editPage.fields.forEach(f => {
         if (f.parameter !== this.page.keyParameter) {
           if (f.send === 'always' || ((!f.send || f.send === 'display') && (!f.displays || f.displays.includes(this.mode)) && (!f.when || f.when(this.form, this.editPage.fields, this)))) {
@@ -385,10 +385,10 @@ export default {
         params[this.page.keyParameter] = this.id
       }
       this.loading = true
-      let option = {
+      const option = {
         method: this.editPage.submit[`${this.mode}ApiParams`] && this.editPage.submit[`${this.mode}ApiParams`].method ? this.editPage.submit[`${this.mode}ApiParams`].method : 'post'
       }
-      let finalTarget = bizUtil.fixApiTarget(this.editPage.submit[`${this.mode}Target`], params)
+      const finalTarget = bizUtil.fixApiTarget(this.editPage.submit[`${this.mode}Target`], params)
       customQuery(finalTarget, params, option).then(data => {
         // 成功
         this.loading = false
@@ -425,7 +425,7 @@ export default {
         const item = this.editPage.fields[i]
         if ((!item.displays || item.displays.includes(this.mode)) && (!item.when || item.when(this.form, this.editPage.fields, this))) {
           // NOTE 检验仅针对显示的字段。因为不显示的字段即使检验不通过，用户也没法修改其值
-          let value = item.trim && typeof (item.value) === 'string' ? item.value.trim() : item.value
+          const value = item.trim && typeof (item.value) === 'string' ? item.value.trim() : item.value
           if (item.required && typeof (item.value) !== 'boolean' && value !== 0 && !value) {
             this.$message({
               message: `${t('msg.shouldFinish')}${item.foreignKey ? t(item.foreignKey) : item.label}`,
@@ -435,7 +435,7 @@ export default {
             break
           }
           if (item.validate) {
-            let validateResult = item.validate(value, this.form, this)
+            const validateResult = item.validate(value, this.form, this)
             if (validateResult) {
               // 校验通过
             } else {
@@ -452,22 +452,22 @@ export default {
       if (this.loading) {
         return
       }
-      let params = {}
+      const params = {}
       params[this.page.keyParameter] = this.id
       this.loading = true
-      let option = {
+      const option = {
         method: this.editPage.detailApiParams?.method || 'post'
       }
-      let finalTarget = bizUtil.fixApiTarget(this.editPage.detailTarget, passParams)
+      const finalTarget = bizUtil.fixApiTarget(this.editPage.detailTarget, passParams)
       customQuery(finalTarget, params, option).then(data => {
         this.loading = false
         if (data && data[system.codeParam] === system.okCode) {
           // 成功
           const raw = data.data || {}
-          let detail = bizUtil.digData(raw, system.dataWrapper) || {}
+          const detail = bizUtil.digData(raw, system.dataWrapper) || {}
           // 按照字段填充值
           this.editPage.fields.forEach(item => {
-            let value = detail[item.parameter] ?? ''
+            const value = detail[item.parameter] ?? ''
             if (item.fetchHandler) {
               item.value = item.fetchHandler(value, this)
             } else {

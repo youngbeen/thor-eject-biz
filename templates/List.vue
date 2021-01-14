@@ -17,8 +17,8 @@
             <!-- input类型 -->
             <el-input v-if="item.type === 'input'"
               v-model="item.value"
-              :maxlength="item.maxlength || ''"
               :clearable="!item.required"
+              :maxlength="item.maxlength || ''"
               placeholder=""></el-input>
             <!-- select类型 -->
             <el-select v-else-if="item.type === 'select'"
@@ -234,7 +234,7 @@ export default {
   computed: {
     form () {
       if (this.listPage.filters) {
-        let result = {}
+        const result = {}
         this.listPage.filters.forEach(f => {
           result[f.parameter] = f.value
         })
@@ -299,7 +299,7 @@ export default {
       //   })
       //   return false
       // }
-      let { bizPageId, keyParameter = 'id', name, foreignKey, size, listPage } = page
+      const { bizPageId, keyParameter = 'id', name, foreignKey, size, listPage } = page
       this.page = {
         bizPageId,
         keyParameter,
@@ -427,7 +427,7 @@ export default {
               params[item] = data[item]
             } else {
               // 对象类型的配置
-              let value = item.handler ? item.handler(data[item.parameter], this) : data[item.parameter]
+              const value = item.handler ? item.handler(data[item.parameter], this) : data[item.parameter]
               params[item.as || item.parameter] = value
             }
           })
@@ -441,7 +441,7 @@ export default {
       // 执行操作
       if (action.type === 'router' && type !== 'batchAction') {
         // 非批量操作router类型操作
-        let routerObj = {
+        const routerObj = {
           query: {},
           params: {}
         }
@@ -452,7 +452,7 @@ export default {
           // 使用params方式传递参数
           routerObj.params = params
         }
-        let keyObject = {}
+        const keyObject = {}
         if (['commonBiz', 'commonBizEdit'].includes(action.target.name)) {
           keyObject.bizPageId = this.page.bizPageId
         }
@@ -467,10 +467,10 @@ export default {
           return
         }
         this.loading = true
-        let option = {
+        const option = {
           method: action.apiParams?.method || 'post'
         }
-        let finalTarget = bizUtil.fixApiTarget(action.target, params)
+        const finalTarget = bizUtil.fixApiTarget(action.target, params)
         customQuery(finalTarget, params, option).then(res => {
           this.loading = false
           if (res && res[system.codeParam] === system.okCode) {
@@ -505,7 +505,7 @@ export default {
         const item = this.listPage.filters[i]
         if (!item.when || item.when(this.form, this.listPage.filters, this)) {
           // NOTE 检验仅针对显示的筛选项。因为不显示的筛选项即使检验不通过，用户也没法修改其值
-          let value = item.trim && typeof (item.value) === 'string' ? item.value.trim() : item.value
+          const value = item.trim && typeof (item.value) === 'string' ? item.value.trim() : item.value
           if (item.required && !value) {
             this.$message({
               message: `${t('msg.shouldFinish')}${item.foreignKey ? t(item.foreignKey) : item.label}`,
@@ -515,7 +515,7 @@ export default {
             break
           }
           if (item.validate) {
-            let validateResult = item.validate(value, this.form, this)
+            const validateResult = item.validate(value, this.form, this)
             if (validateResult) {
               // 校验通过
             } else {
@@ -535,7 +535,7 @@ export default {
       if (!this.verifyFilters()) {
         return
       }
-      let params = {
+      const params = {
         pageNo: this.filter.pageNo,
         pageSize: this.listPage.isTreeTable ? 0 : this.filter.pageSize
       }
@@ -549,7 +549,7 @@ export default {
         }
       })
       this.loading = true
-      let option = {
+      const option = {
         method: this.listPage.listApiParams?.method || 'post'
       }
       customQuery(this.listPage.listTarget, params, option).then(data => {
@@ -558,16 +558,16 @@ export default {
           // 成功
           const raw = data.data || {}
           const detail = bizUtil.digData(raw, system.dataWrapper) || {}
-          let list = detail.list || []
+          const list = detail.list || []
           if (this.listPage.isTreeTable) {
             list.forEach(item => {
               item.children = []
             })
-            let rootNode = {
+            const rootNode = {
               children: []
             }
             rootNode[this.page.keyParameter] = system.rootNodeKeyValue
-            let originalList = bizUtil.createTree(rootNode, list, this.page.keyParameter)
+            const originalList = bizUtil.createTree(rootNode, list, this.page.keyParameter)
             this.list = originalList.children || []
             if (['all', 'no'].includes(this.listPage.treeExpendMode)) {
               this.defaultExpands = []
