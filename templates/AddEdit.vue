@@ -114,7 +114,8 @@
               :max="(item.inputNumberProps && item.inputNumberProps.max) || Number.POSITIVE_INFINITY"
               :step="(item.inputNumberProps && item.inputNumberProps.step) || 1"
               :precision="(item.inputNumberProps && item.inputNumberProps.precision) || 0"
-              placeholder=""></el-input-number>
+              placeholder=""
+              style="display: block; width: 100%;"></el-input-number>
             <!-- TODO 支持其他类型 -->
           </el-form-item>
         </div>
