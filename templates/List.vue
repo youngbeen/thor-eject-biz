@@ -390,6 +390,10 @@ export default {
       if (!type || !action) {
         return
       }
+      if (['api', 'custom'].includes(action?.type) && this.loading) {
+        // api请求与自定义操作在loading时不允许重新触发
+        return
+      }
       if (type === 'batchAction' && (!action.data || !action.target)) {
         // 批量操作项缺失关键配置
         return
@@ -468,7 +472,8 @@ export default {
         }
         this.loading = true
         const option = {
-          method: action.apiParams?.method || 'post'
+          method: action.apiParams?.method || 'post',
+          responseType: action.apiParams?.responseType || 'json'
         }
         const finalTarget = bizUtil.fixApiTarget(action.target, params)
         customQuery(finalTarget, params, option).then(res => {
@@ -550,7 +555,8 @@ export default {
       })
       this.loading = true
       const option = {
-        method: this.listPage.listApiParams?.method || 'post'
+        method: this.listPage.listApiParams?.method || 'post',
+        responseType: this.listPage.listApiParams?.responseType || 'json'
       }
       customQuery(this.listPage.listTarget, params, option).then(data => {
         this.loading = false

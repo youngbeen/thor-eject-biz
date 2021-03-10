@@ -387,7 +387,8 @@ export default {
       }
       this.loading = true
       const option = {
-        method: this.editPage.submit[`${this.mode}ApiParams`] && this.editPage.submit[`${this.mode}ApiParams`].method ? this.editPage.submit[`${this.mode}ApiParams`].method : 'post'
+        method: this.editPage.submit[`${this.mode}ApiParams`] && this.editPage.submit[`${this.mode}ApiParams`].method ? this.editPage.submit[`${this.mode}ApiParams`].method : 'post',
+        responseType: this.editPage.submit[`${this.mode}ApiParams`] && this.editPage.submit[`${this.mode}ApiParams`].responseType ? this.editPage.submit[`${this.mode}ApiParams`].responseType : 'json'
       }
       const finalTarget = bizUtil.fixApiTarget(this.editPage.submit[`${this.mode}Target`], params)
       customQuery(finalTarget, params, option).then(data => {
@@ -457,7 +458,8 @@ export default {
       params[this.page.keyParameter] = this.id
       this.loading = true
       const option = {
-        method: this.editPage.detailApiParams?.method || 'post'
+        method: this.editPage.detailApiParams?.method || 'post',
+        responseType: this.editPage.detailApiParams?.responseType || 'json'
       }
       const finalTarget = bizUtil.fixApiTarget(this.editPage.detailTarget, passParams)
       customQuery(finalTarget, params, option).then(data => {

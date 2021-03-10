@@ -108,6 +108,7 @@ const findFunctionCloseIndex = (string, from = 0) => {
         }
       } else if (char === ')') {
         foundCloseParenthese = true
+        possibleEndIndex = i
       }
     } else if (char === '(') {
       foundOpenParenthese = true

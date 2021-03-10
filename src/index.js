@@ -207,7 +207,7 @@ for (let i = 0; i < configBody.length; i++) {
     // array出栈
     wrapperStack.pop()
     temp += c
-  } else if (c === '(' || /^function\s*\(/.test(configBody.substring(i))) {
+  } else if (c === '(' || /^function\s*\(/.test(configBody.substring(i)) || /^[A-Za-z_]+\(/.test(configBody.substring(i))) {
     // function内容
     let endIndex = findFunctionCloseIndex(configBody, i)
     let functionBody = configBody.substring(i, endIndex + 1)
@@ -290,7 +290,7 @@ for (let i = 0; i < configBody.length; i++) {
     }
   }
 }
-// console.log('结果', temp)
+console.log('读取处理原始数据', temp)
 
 // #2 得到转化的js数据后，开始进行交互询问
 const config = JSON.parse(temp)
