@@ -76,6 +76,12 @@ const generate = (props) => {
             newRows.push(row)
           }
         }
+        if (newRows.length) {
+          // 修正最后一行多余的逗号
+          let lastRow = newRows[newRows.length - 1]
+          lastRow = lastRow.replace(/,(?=\s*$)/, '')
+          newRows.splice(newRows.length - 1, 1, lastRow)
+        }
         content = content.replace(/\*page:{page}/, newRows.join('\n'))
         // 加入替换依赖
         newRows = []
@@ -123,6 +129,12 @@ const generate = (props) => {
               newRows.push(rows[i - 1])
               newRows.push(row)
             }
+          }
+          if (newRows.length) {
+            // 修正最后一行多余的逗号
+            let lastRow = newRows[newRows.length - 1]
+            lastRow = lastRow.replace(/,(?=\s*$)/, '')
+            newRows.splice(newRows.length - 1, 1, lastRow)
           }
           content = content.replace(/\*page:{page}/, newRows.join('\n'))
           // 加入替换依赖
