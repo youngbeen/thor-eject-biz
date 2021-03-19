@@ -116,7 +116,7 @@
           </el-table-column>
           <el-table-column
             v-for="item in displayedTableFields"
-            :key="item.parameter"
+            :key="page.bizPageId + '-' + item.parameter"
             :prop="item.parameter"
             :label="item.foreignKey ? t(item.foreignKey) : item.label"
             :align="item.align || 'left'"
@@ -478,7 +478,7 @@ export default {
         const finalTarget = bizUtil.fixApiTarget(action.target, params)
         customQuery(finalTarget, params, option).then(res => {
           this.loading = false
-          if (res && res[system.codeParam] === system.okCode) {
+          if (res && (res[system.codeParam] === system.okCode || Object.prototype.toString.call(res) === '[object Blob]')) {
             // 成功
             if (action.successCallback) {
               action.successCallback(res, this)

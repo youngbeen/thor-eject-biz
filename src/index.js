@@ -57,7 +57,12 @@ const generate = (props) => {
           return (digData(props, chain) || defaultValue)
         })
         // 替换page内容
-        let rawContent = readFileContent('src/models/SystemConfig.js')
+        let rawContent = ''
+        if (props.isSingle) {
+          rawContent = readFileContent(`src/models/bizconfig/${props.bizPageId}.js`)
+        } else {
+          rawContent = readFileContent('src/models/SystemConfig.js')
+        }
         let rows = rawContent.split('\n')
         let newRows = []
         let flag = false
@@ -111,7 +116,12 @@ const generate = (props) => {
             return (digData(props, chain) || defaultValue)
           })
           // 替换page内容
-          let rawContent = readFileContent('src/models/SystemConfig.js')
+          let rawContent = ''
+          if (props.isSingle) {
+            rawContent = readFileContent(`src/models/bizconfig/${props.bizPageId}.js`)
+          } else {
+            rawContent = readFileContent('src/models/SystemConfig.js')
+          }
           let rows = rawContent.split('\n')
           let newRows = []
           let flag = false
@@ -165,188 +175,220 @@ const generate = (props) => {
   })
 }
 
-// #1 读取当前工程的配置文件内容
-let rawContent = readFileContent('src/models/SystemConfig.js')
-let configBody = rawContent.match(/(?<=export default )[\s\S]*/)
-configBody.length && (configBody = configBody[0])
-// 去除所有注释
-configBody = configBody.replace(/(?<!:)\/\/[^\r\n]*/g, '')
-// 去除连续换行
-configBody = configBody.replace(/([\n\r]\s+){2,}/g, '\n')
-// 替换所有制表符
-configBody = configBody.replace(/\t/g, '  ')
-// console.log(111, configBody)
-let wrapperStack = [
-  // {
-  //   identifier: 'object|array|function',
-  //   status: 'key|value|end',
-  // }
-]
-let temp = ''
-for (let i = 0; i < configBody.length; i++) {
-  const c = configBody[i]
-  const currentWrapper = wrapperStack.length ? wrapperStack[wrapperStack.length - 1] : {}
-  if (['\n', '\r', ' ', '\t'].includes(c)) {
-    // 空行等字符
-    temp += c
-    continue
+const getConfigContent = (filePath) => {
+  if (!filePath) {
+    return
   }
-  if (c === '{') {
-    // object入栈
-    if (currentWrapper.status === 'value') {
-      currentWrapper.status = 'end'
+  let rawContent = readFileContent(filePath)
+  let configBody = rawContent.match(/(?<=export default )[\s\S]*/)
+  configBody.length && (configBody = configBody[0])
+  // 去除所有注释
+  configBody = configBody.replace(/(?<!:)\/\/[^\r\n]*/g, '')
+  // 去除连续换行
+  configBody = configBody.replace(/([\n\r]\s+){2,}/g, '\n')
+  // 替换所有制表符
+  configBody = configBody.replace(/\t/g, '  ')
+  // console.log(111, configBody)
+  let wrapperStack = [
+    // {
+    //   identifier: 'object|array|function',
+    //   status: 'key|value|end',
+    // }
+  ]
+  let temp = ''
+  for (let i = 0; i < configBody.length; i++) {
+    const c = configBody[i]
+    const currentWrapper = wrapperStack.length ? wrapperStack[wrapperStack.length - 1] : {}
+    if (['\n', '\r', ' ', '\t'].includes(c)) {
+      // 空行等字符
+      temp += c
+      continue
     }
-    wrapperStack.push({
-      identifier: 'object',
-      status: 'key'
-    })
-    temp += c
-  } else if (c === '[') {
-    // array入栈
-    if (currentWrapper.status === 'value') {
-      currentWrapper.status = 'end'
-    }
-    wrapperStack.push({
-      identifier: 'array',
-      status: 'value'
-    })
-    temp += c
-  } else if (currentWrapper.identifier === 'object' && c === '}') {
-    // object出栈
-    wrapperStack.pop()
-    temp += c
-  } else if (currentWrapper.identifier === 'array' && c === ']') {
-    // array出栈
-    wrapperStack.pop()
-    temp += c
-  } else if (c === '(' || /^function\s*\(/.test(configBody.substring(i)) || /^[A-Za-z_]+\(/.test(configBody.substring(i))) {
-    // function内容
-    let endIndex = findFunctionCloseIndex(configBody, i)
-    let functionBody = configBody.substring(i, endIndex + 1)
-    // 去除内容中的换行符
-    functionBody = functionBody.replace(/[\n\r]/g, '')
-    // 转义"
-    functionBody = functionBody.replace(/(")/g, '\\$1')
-    temp += `"${functionBody}"`
-    i = endIndex
-    if (currentWrapper.status === 'value') {
-      currentWrapper.status = 'end'
-    }
-  } else {
-    // 其他正常流程
-    if (currentWrapper.identifier === 'object') {
-      if (currentWrapper.status === 'key') {
-        // 寻找object key
-        let colonIndex = findTargetIndex(configBody, ':', i)
-        let keyName = configBody.substring(i, colonIndex)
-        temp += `"${keyName}":`
-        i = colonIndex
-        currentWrapper.status = 'value'
-      } else if (currentWrapper.status === 'value') {
-        // 寻找object value
-        if (["'", '"'].includes(c)) {
-          // 字符串类型值
-          let quoteIndex = findTargetIndex(configBody, c, i + 1)
-          let valueString = configBody.substring(i + 1, quoteIndex)
-          // 转义"
-          valueString = valueString.replace(/(")/g, '\\$1')
-          temp += `"${valueString}"`
-          i = quoteIndex
-          currentWrapper.status = 'end'
-        } else {
-          // 其他类型值
-          let endIndex = findTargetIndex(configBody, [' ', '\n', '\t', '\r', ','], i + 1)
-          let valueString = configBody.substring(i, endIndex)
-          temp += valueString
-          i = endIndex - 1
-          currentWrapper.status = 'end'
-        }
-      } else if (currentWrapper.status === 'end' && c === ',') {
-        currentWrapper.status = 'key'
-        if (['}', ']'].includes(getNextValidChar(configBody, i + 1).value)) {
-          // 多余的,
-        } else {
-          temp += c
-        }
-      }
-    } else if (currentWrapper.identifier === 'array') {
+    if (c === '{') {
+      // object入栈
       if (currentWrapper.status === 'value') {
-        // 寻找array value
-        if (["'", '"'].includes(c)) {
-          // 字符串类型值
-          let quoteIndex = findTargetIndex(configBody, c, i + 1)
-          let valueString = configBody.substring(i + 1, quoteIndex)
-          // 转义"
-          valueString = valueString.replace(/(")/g, '\\$1')
-          temp += `"${valueString}"`
-          i = quoteIndex
-          currentWrapper.status = 'end'
-        } else {
-          // 其他类型值
-          let endIndex = findTargetIndex(configBody, [' ', '\n', '\t', '\r', ',', ']'], i + 1)
-          let valueString = configBody.substring(i, endIndex)
-          temp += valueString
-          i = endIndex - 1
-          currentWrapper.status = 'end'
-        }
-      } else if (currentWrapper.status === 'end' && c === ',') {
-        currentWrapper.status = 'value'
-        if (['}', ']'].includes(getNextValidChar(configBody, i + 1).value)) {
-          // 多余的,
-        } else {
-          temp += c
-        }
+        currentWrapper.status = 'end'
+      }
+      wrapperStack.push({
+        identifier: 'object',
+        status: 'key'
+      })
+      temp += c
+    } else if (c === '[') {
+      // array入栈
+      if (currentWrapper.status === 'value') {
+        currentWrapper.status = 'end'
+      }
+      wrapperStack.push({
+        identifier: 'array',
+        status: 'value'
+      })
+      temp += c
+    } else if (currentWrapper.identifier === 'object' && c === '}') {
+      // object出栈
+      wrapperStack.pop()
+      temp += c
+    } else if (currentWrapper.identifier === 'array' && c === ']') {
+      // array出栈
+      wrapperStack.pop()
+      temp += c
+    } else if (c === '(' || /^function\s*\(/.test(configBody.substring(i)) || /^[A-Za-z_]+\(/.test(configBody.substring(i))) {
+      // function内容
+      let endIndex = findFunctionCloseIndex(configBody, i)
+      let functionBody = configBody.substring(i, endIndex + 1)
+      // 去除内容中的换行符
+      functionBody = functionBody.replace(/[\n\r]/g, '')
+      // 转义"
+      functionBody = functionBody.replace(/(")/g, '\\$1')
+      temp += `"${functionBody}"`
+      i = endIndex
+      if (currentWrapper.status === 'value') {
+        currentWrapper.status = 'end'
       }
     } else {
-      temp += c
+      // 其他正常流程
+      if (currentWrapper.identifier === 'object') {
+        if (currentWrapper.status === 'key') {
+          // 寻找object key
+          let colonIndex = findTargetIndex(configBody, ':', i)
+          let keyName = configBody.substring(i, colonIndex)
+          temp += `"${keyName}":`
+          i = colonIndex
+          currentWrapper.status = 'value'
+        } else if (currentWrapper.status === 'value') {
+          // 寻找object value
+          if (["'", '"'].includes(c)) {
+            // 字符串类型值
+            let quoteIndex = findTargetIndex(configBody, c, i + 1)
+            let valueString = configBody.substring(i + 1, quoteIndex)
+            // 转义"
+            valueString = valueString.replace(/(")/g, '\\$1')
+            temp += `"${valueString}"`
+            i = quoteIndex
+            currentWrapper.status = 'end'
+          } else {
+            // 其他类型值
+            let endIndex = findTargetIndex(configBody, [' ', '\n', '\t', '\r', ','], i + 1)
+            let valueString = configBody.substring(i, endIndex)
+            temp += valueString
+            i = endIndex - 1
+            currentWrapper.status = 'end'
+          }
+        } else if (currentWrapper.status === 'end' && c === ',') {
+          currentWrapper.status = 'key'
+          if (['}', ']'].includes(getNextValidChar(configBody, i + 1).value)) {
+            // 多余的,
+          } else {
+            temp += c
+          }
+        }
+      } else if (currentWrapper.identifier === 'array') {
+        if (currentWrapper.status === 'value') {
+          // 寻找array value
+          if (["'", '"'].includes(c)) {
+            // 字符串类型值
+            let quoteIndex = findTargetIndex(configBody, c, i + 1)
+            let valueString = configBody.substring(i + 1, quoteIndex)
+            // 转义"
+            valueString = valueString.replace(/(")/g, '\\$1')
+            temp += `"${valueString}"`
+            i = quoteIndex
+            currentWrapper.status = 'end'
+          } else {
+            // 其他类型值
+            let endIndex = findTargetIndex(configBody, [' ', '\n', '\t', '\r', ',', ']'], i + 1)
+            let valueString = configBody.substring(i, endIndex)
+            temp += valueString
+            i = endIndex - 1
+            currentWrapper.status = 'end'
+          }
+        } else if (currentWrapper.status === 'end' && c === ',') {
+          currentWrapper.status = 'value'
+          if (['}', ']'].includes(getNextValidChar(configBody, i + 1).value)) {
+            // 多余的,
+          } else {
+            temp += c
+          }
+        }
+      } else {
+        temp += c
+      }
     }
   }
+  return temp
 }
-console.log('读取处理原始数据', temp)
+
+// #1 读取当前工程的配置文件内容
+// console.log(fs.readdirSync('src/models/bizconfig/'))
+let commonConfig = getConfigContent('src/models/SystemConfig.js')
+const contents = fs.readdirSync('src/models/bizconfig/')
+const singleConfigFiles = contents.filter(c => c.endsWith('.js'))
+let singleConfigs = []
+singleConfigFiles.forEach(fileName => {
+  let config = getConfigContent(`src/models/bizconfig/${fileName}`)
+  config && singleConfigs.push(JSON.parse(config))
+})
+// console.log(singleConfigs)
+// console.log('读取处理原始数据', commonConfig)
 
 // #2 得到转化的js数据后，开始进行交互询问
-const config = JSON.parse(temp)
+const commonConfigs = JSON.parse(commonConfig)
 let bizPageId = ''
 let bizData = {} // 当前导出的业务配置page object
 let bizName = '' // 导出的业务英文命名
+let isSingle = false
 console.log(`当前工程：${info(pathInfo.name)}  路径：${info(currentPath)}`)
 // 准备交互问题
-let localBizs = config.bizPages.map(biz => {
+let singleBizs = singleConfigs.map(biz => {
+  return {
+    name: 'single-' + biz.bizPageId,
+    message: `${biz.name} - ${biz.bizPageId}.js`,
+    hint: '独立配置文件业务'
+  }
+})
+let localBizs = commonConfigs.bizPages.map(biz => {
   return {
     name: biz.bizPageId,
     message: `${biz.name} - ${biz.bizPageId}`,
     hint: '本地业务'
   }
 })
-let remoteBizs = config.remotePages.map(biz => {
+let remoteBizs = commonConfigs.remotePages.map(biz => {
   return {
     name: biz.bizPageId,
     message: `${biz.name} - ${biz.bizPageId}`,
     hint: '远程业务'
   }
 })
-if (localBizs.length + remoteBizs.length <= 0) {
+if (singleBizs.length + localBizs.length + remoteBizs.length <= 0) {
   console.log(tip('未找到任何配置业务'))
   return false
 }
-console.log(`已找到${localBizs.length + remoteBizs.length}项配置业务`)
+console.log(`已找到${singleBizs.length + localBizs.length + remoteBizs.length}项配置业务`)
 prompt([
   {
     type: 'select',
     name: 'bizPageId',
     message: '选择需转为静态页面文件的配置业务',
-    choices: [...localBizs, ...remoteBizs]
+    choices: [...singleBizs, ...localBizs, ...remoteBizs]
   }
 ]).then(res => {
-  bizPageId = res.bizPageId
-  bizData = [...config.bizPages, ...config.remotePages].find(item => item.bizPageId === bizPageId)
-  let bizName = res.bizPageId.substring(1)
+  if (res.bizPageId.startsWith('single-')) {
+    // 选择的独立配置
+    isSingle = true
+    bizPageId = res.bizPageId.split('-')[1]
+    bizData = singleConfigs.find(item => item.bizPageId === bizPageId)
+  } else {
+    // 其他统一配置
+    bizPageId = res.bizPageId
+    bizData = [...commonConfigs.bizPages, ...commonConfigs.remotePages].find(item => item.bizPageId === bizPageId)
+  }
   return prompt([
     {
       type: 'input',
       name: 'bizName',
       message: '设定输出业务的英文名称（用于相关文件命名）',
-      initial: bizName
+      initial: bizPageId.substring(1)
     }
   ])
 }).then(res => {
@@ -355,7 +397,8 @@ prompt([
   generate({
     bizPageId,
     bizName,
-    bizData
+    bizData,
+    isSingle
   })
 }).catch(err => {
   console.log(error(err))
