@@ -25,12 +25,13 @@
               :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
               @change="handleChange(item, index)"
               placeholder=""></el-input>
-            <!-- select类型 -->
-            <el-select v-else-if="item.type === 'select'"
+            <!-- select | inputselect类型 -->
+            <el-select v-else-if="item.type === 'select' || item.type === 'inputselect'"
               v-model="item.value"
               :multiple="item.multiple"
               :clearable="!item.required"
               filterable
+              :allow-create="item.type === 'inputselect'"
               :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
               @change="handleChange(item, index)"
               placeholder=""
@@ -55,9 +56,9 @@
                 :disabled="o.disabled"
                 border>{{ o.label }}</el-radio>
             </el-radio-group>
-            <!-- date | datetime | month类型 -->
+            <!-- date | datetime | month | daterange类型 -->
             <el-date-picker
-              v-else-if="['date', 'datetime', 'month'].includes(item.type)"
+              v-else-if="['date', 'datetime', 'month', 'daterange'].includes(item.type)"
               v-model="item.value"
               :type="item.type"
               :value-format="dateFormatMap.get(item.type)"
@@ -161,7 +162,8 @@ export default {
       dateFormatMap: new Map([
         ['date', 'yyyy-MM-dd'],
         ['datetime', 'yyyy-MM-dd HH:mm:ss'],
-        ['month', 'yyyy-MM']
+        ['month', 'yyyy-MM'],
+        ['daterange', 'yyyy-MM-dd HH:mm:ss']
       ]),
       t,
       $message: this.$message, // 因为注册问题，这里手动注册用于handler回调
@@ -313,9 +315,10 @@ export default {
           ]
         }
         // 处理透传的筛选值
-        if (item.parameter !== 'bizPageId' && query[item.parameter]) {
+        const fromParamKey = item.from || item.parameter
+        if (fromParamKey !== 'bizPageId' && query[fromParamKey]) {
           // query参数中存在带入参数
-          const rawValue = query[item.parameter]
+          const rawValue = query[fromParamKey]
           if (item.fetchHandler) {
             item.value = item.fetchHandler(rawValue, this)
           } else {
@@ -342,7 +345,7 @@ export default {
       }
 
       this.editPage.fields.forEach(f => {
-        if (['select', 'radio'].includes(f.type) && f.defaultOptions && f.refreshBy && f.refreshBy.length && f.refreshBy.includes(fieldName)) {
+        if (['select', 'inputselect', 'radio'].includes(f.type) && f.defaultOptions && f.refreshBy && f.refreshBy.length && f.refreshBy.includes(fieldName)) {
           if (f.defaultOptions) {
             if (f.async) {
               // 异步获取默认数据
@@ -374,9 +377,9 @@ export default {
             let value = f.value
             f.trim && typeof (value) === 'string' && (value = value.trim())
             if (f.sendHandler) {
-              params[f.parameter] = f.sendHandler(value, this)
+              params[f.as || f.parameter] = f.sendHandler(value, this)
             } else {
-              params[f.parameter] = value
+              params[f.as || f.parameter] = value
             }
           }
         }
@@ -470,7 +473,7 @@ export default {
           const detail = bizUtil.digData(raw, system.dataWrapper) || {}
           // 按照字段填充值
           this.editPage.fields.forEach(item => {
-            const value = detail[item.parameter] ?? ''
+            const value = detail[item.from || item.parameter] ?? ''
             if (item.fetchHandler) {
               item.value = item.fetchHandler(value, this)
             } else {

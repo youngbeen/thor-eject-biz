@@ -20,11 +20,12 @@
               :clearable="!item.required"
               :maxlength="item.maxlength || ''"
               placeholder=""></el-input>
-            <!-- select类型 -->
-            <el-select v-else-if="item.type === 'select'"
+            <!-- select | inputselect类型 -->
+            <el-select v-else-if="item.type === 'select' || item.type === 'inputselect'"
               v-model="item.value"
               :multiple="item.multiple"
               filterable
+              :allow-create="item.type === 'inputselect'"
               :clearable="!item.required"
               placeholder="">
               <el-option
@@ -35,9 +36,9 @@
                 :disabled="o.disabled">
               </el-option>
             </el-select>
-            <!-- date | datetime | month类型 -->
+            <!-- date | datetime | month | daterange类型 -->
             <el-date-picker
-              v-else-if="['date', 'datetime', 'month'].includes(item.type)"
+              v-else-if="['date', 'datetime', 'month', 'daterange'].includes(item.type)"
               v-model="item.value"
               :type="item.type"
               :value-format="dateFormatMap.get(item.type)"
@@ -220,7 +221,8 @@ export default {
       dateFormatMap: new Map([
         ['date', 'yyyy-MM-dd'],
         ['datetime', 'yyyy-MM-dd HH:mm:ss'],
-        ['month', 'yyyy-MM']
+        ['month', 'yyyy-MM'],
+        ['daterange', 'yyyy-MM-dd HH:mm:ss']
       ]),
       user,
       t,
