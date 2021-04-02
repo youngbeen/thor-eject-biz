@@ -107,11 +107,13 @@
           <el-table-column
             type="selection"
             v-if="listPage.batchActions.length"
+            :key="page.bizPageId + '-pageselection'"
             width="55">
           </el-table-column>
           <el-table-column
             v-if="listPage.hasIndex === undefined || listPage.hasIndex"
             type="index"
+            :key="page.bizPageId + '-pageindex'"
             :label="t('label.indexName')"
             width="60">
           </el-table-column>
@@ -148,6 +150,7 @@
             </template>
           </el-table-column>
           <el-table-column
+            :key="page.bizPageId + '-pageaction'"
             fixed="right"
             :label="t('label.operation')"
             v-if="listPage.tableActions.length"
