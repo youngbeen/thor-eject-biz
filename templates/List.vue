@@ -97,6 +97,7 @@
       <!-- 列表栏 -->
       <div class="box-list" v-if="page.foreignKey || page.name">
         <el-table
+          :size="page.size === 'mini' ? 'small' : 'medium'"
           :data="list"
           v-loading="loading"
           :row-key="getRowKey"
