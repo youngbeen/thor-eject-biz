@@ -57,7 +57,12 @@
             <el-cascader v-else-if="item.type === 'cascader'"
               v-model="item.value"
               :options="item.options"
-              :props="{ checkStrictly: item.nodeSelectable, lazy: Boolean(item.lazyOptions), lazyLoad: item.lazyOptions }"
+              :props="{
+                checkStrictly: item.nodeSelectable,
+                lazy: Boolean(item.lazyOptions),
+                lazyLoad: item.lazyOptions,
+                multiple: item.multiple
+              }"
               filterable
               :clearable="!item.required"
               placeholder="">
