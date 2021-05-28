@@ -25,8 +25,11 @@
               v-model="item.value"
               :multiple="item.multiple"
               filterable
+              reserve-keyword
               :allow-create="item.type === 'inputselect'"
               :clearable="!item.required"
+              :remote="Boolean(item.lazyOptions)"
+              :remote-method="Boolean(item.lazyOptions) ? (keyword) => triggerLazyOptionLoad(item, keyword) : undefined"
               placeholder="">
               <el-option
                 v-for="o in item.options"
@@ -67,7 +70,7 @@
               :clearable="!item.required"
               placeholder="">
             </el-cascader>
-            <!-- TODO 支持其他种类 -->
+            <!-- 支持其他种类 -->
           </el-form-item>
           <el-form-item v-if="listPage.filters.length && (listPage.hasSearch === undefined || listPage.hasSearch)">
             <el-button type="primary" @click="search()">
@@ -354,6 +357,9 @@ export default {
       })
       this.listPage = listPage
     },
+    triggerLazyOptionLoad (item, keyword) {
+      item.lazyOptions && item.lazyOptions(this, keyword)
+    },
     search () {
       this.filter.pageNo = 1
       this.getList()
@@ -575,7 +581,8 @@ export default {
           // 成功
           const raw = data.data || {}
           const detail = bizUtil.digData(raw, system.dataWrapper) || {}
-          const list = detail.list || []
+          const listParamName = this.listPage.listApiParams?.listParam || 'list'
+          const list = detail[listParamName] || []
           if (this.listPage.isTreeTable) {
             list.forEach(item => {
               item.children = []
@@ -594,7 +601,8 @@ export default {
           } else {
             this.list = list
           }
-          this.total = parseInt(detail[system.totalParam]) || 0
+          const totalParamName = this.listPage.listApiParams?.totalParam || system.totalParam
+          this.total = parseInt(detail[totalParamName]) || 0
         } else {
           // 业务码错误
           this.$message({

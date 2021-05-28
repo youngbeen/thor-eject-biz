@@ -31,7 +31,10 @@
               :multiple="item.multiple"
               :clearable="!item.required"
               filterable
+              reserve-keyword
               :allow-create="item.type === 'inputselect'"
+              :remote="Boolean(item.lazyOptions)"
+              :remote-method="Boolean(item.lazyOptions) ? (keyword) => triggerLazyOptionLoad(item, keyword) : undefined"
               :disabled="mode === 'detail' || (item.edits && !item.edits.includes(mode)) || (item.disabled && Boolean(item.disabled(form, editPage.fields, this)))"
               @change="handleChange(item, index)"
               placeholder=""
@@ -122,7 +125,7 @@
               :precision="(item.inputNumberProps && item.inputNumberProps.precision) || 0"
               placeholder=""
               style="display: block; width: 100%;"></el-input-number>
-            <!-- TODO 支持其他类型 -->
+            <!-- 支持其他类型 -->
           </el-form-item>
         </div>
         <el-form-item>
@@ -332,6 +335,9 @@ export default {
         }
       })
       this.editPage = editPage
+    },
+    triggerLazyOptionLoad (item, keyword) {
+      item.lazyOptions && item.lazyOptions(this, keyword)
     },
     handleChange (item, index) {
       // console.log('change', item, index)
