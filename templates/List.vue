@@ -357,8 +357,11 @@ export default {
       })
       this.listPage = listPage
     },
-    triggerLazyOptionLoad (item, keyword) {
-      item.lazyOptions && item.lazyOptions(this, keyword)
+    async triggerLazyOptionLoad (item, keyword) {
+      if (item.lazyOptions) {
+        item.options = await item.lazyOptions(this, keyword)
+        this.$forceUpdate()
+      }
     },
     search () {
       this.filter.pageNo = 1
