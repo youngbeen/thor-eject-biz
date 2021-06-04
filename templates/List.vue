@@ -191,6 +191,9 @@
           @current-change="handlePageChange()">
         </el-pagination>
       </div>
+
+      <!-- 内嵌编辑弹框组件 -->
+      <embed-common-biz-edit></embed-common-biz-edit>
     </div>
   </section>
 </template>
@@ -202,9 +205,14 @@ import system from '@/models/system'
 import user from '@/models/user'
 import bizUtil from '@/utils/CommonBizUtil'
 import { t } from '@/utils/i18nUtil'
+import EmbedCommonBizEdit from '@/components/EmbedCommonBizEdit'
 *import:{import}
 
 export default {
+  components: {
+    EmbedCommonBizEdit
+  },
+
   data () {
     return {
       loading: false,
@@ -481,10 +489,24 @@ export default {
           keyObject.bizPageId = this.page.bizPageId
         }
         keyObject[this.page.keyParameter] = params[this.page.keyParameter]
-        this.$router.push(Object.assign({}, action.target, {
-          query: Object.assign(keyObject, routerObj.query, action.target.query),
-          params: Object.assign({}, routerObj.params, action.target.params)
-        }))
+        if (action.target.visit?.mode === 'embed' && action.target.name === 'commonBizEdit') {
+          // 内嵌方式访问
+          eventBus.$emit('showEmbededCommonBizEdit', {
+            mode: action.target.visit.mode,
+            popWidth: action.target.visit.popWidth || '',
+            popMaxHeight: action.target.visit.popMaxHeight,
+            data: Object.assign({}, action.target, {
+              query: Object.assign(keyObject, routerObj.query, action.target.query),
+              params: Object.assign({}, routerObj.params, action.target.params)
+            })
+          })
+        } else {
+          // 正常方式访问
+          this.$router.push(Object.assign({}, action.target, {
+            query: Object.assign(keyObject, routerObj.query, action.target.query),
+            params: Object.assign({}, routerObj.params, action.target.params)
+          }))
+        }
       } else if (action.type === 'api') {
         // api调用操作
         if (type === 'filterAction' && !this.verifyFilters()) {
