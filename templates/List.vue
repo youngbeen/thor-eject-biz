@@ -194,6 +194,9 @@
 
       <!-- 内嵌编辑弹框组件 -->
       <embed-common-biz-edit></embed-common-biz-edit>
+
+      <!-- 内嵌自定义组件 -->
+      <custom-component></custom-component>
     </div>
   </section>
 </template>
@@ -208,9 +211,22 @@ import { t } from '@/utils/i18nUtil'
 import EmbedCommonBizEdit from '@/components/EmbedCommonBizEdit'
 *import:{import}
 
+const getUrlParam = (url, param) => new URLSearchParams(new URL(url).search || `?${new URL(url).hash.split('?')[1]}`).get(param)
+
 export default {
   components: {
-    EmbedCommonBizEdit
+    EmbedCommonBizEdit,
+    'custom-component': (resolve) => {
+      const bizPageId = getUrlParam(window.location.href, 'bizPageId') || ''
+      const path = bizUtil.getBizPageData(bizPageId)?.listPage?.customComponent?.path || ''
+      if (path) {
+        require([`@/${path}`], resolve)
+      } else {
+        resolve({
+          template: '<div style="display: none">无自定义组件</div>'
+        })
+      }
+    }
   },
 
   data () {
@@ -306,14 +322,7 @@ export default {
       //   })
       //   return false
       // }
-      let page = *page:{page}
-      // if (query.bizPageId[0].toUpperCase() === 'S') {
-      //   // 本地业务
-      //   page = systemConfig.bizPages.find(p => p.bizPageId === query.bizPageId)
-      // } else if (query.bizPageId[0].toUpperCase() === 'D') {
-      //   // 远程业务
-      //   page = systemConfig.remotePages.find(p => p.bizPageId === query.bizPageId)
-      // }
+      const page = *page:{page}
       // if (!page) {
       //   this.$message({
       //     message: t('msg.invalidBizpageid'),
@@ -495,6 +504,7 @@ export default {
             mode: action.target.visit.mode,
             popWidth: action.target.visit.popWidth || '',
             popMaxHeight: action.target.visit.popMaxHeight,
+            modalClosePop: action.target.visit.modalClosePop || false,
             data: Object.assign({}, action.target, {
               query: Object.assign(keyObject, routerObj.query, action.target.query),
               params: Object.assign({}, routerObj.params, action.target.params)

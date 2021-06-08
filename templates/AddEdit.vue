@@ -268,14 +268,7 @@ export default {
       //   })
       //   return false
       // }
-      let page = *page:{page}
-      // if (bizParams.bizPageId[0].toUpperCase() === 'S') {
-      //   // 本地业务
-      //   page = systemConfig.bizPages.find(p => p.bizPageId === bizParams.bizPageId)
-      // } else if (bizParams.bizPageId[0].toUpperCase() === 'D') {
-      //   // 远程业务
-      //   page = systemConfig.remotePages.find(p => p.bizPageId === bizParams.bizPageId)
-      // }
+      const page = *page:{page}
       // if (!page) {
       //   this.$message({
       //     message: t('msg.invalidBizpageid'),

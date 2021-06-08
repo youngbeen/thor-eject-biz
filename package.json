@@ -1,6 +1,6 @@
 {
   "name": "thor-eject-biz",
-  "version": "0.2.20",
+  "version": "0.2.21",
   "description": "Ejecting Thor's configurable biz pages to static biz pages",
   "bin": "src/index.js",
   "scripts": {
