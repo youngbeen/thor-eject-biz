@@ -431,13 +431,13 @@ export default {
         // api请求与自定义操作在loading时不允许重新触发
         return
       }
-      if (type === 'batchAction' && (!action.data || !action.target)) {
-        // 批量操作项缺失关键配置
-        return
-      }
       // 处理参数
       let params = {}
       if (type === 'filterAction') {
+        if ((['router', 'api'].includes(action.type) && !action.target) || (action.type === 'custom' && !action.action)) {
+          // 必选参数非法
+          return
+        }
         if (action.type === 'custom' || (action.type === 'router' && ['commonBiz', 'commonBizEdit'].includes(action.target.name))) {
           params = {
             bizPageId: this.page.bizPageId
@@ -455,6 +455,10 @@ export default {
           })
         }
       } else if (type === 'tableAction') {
+        if ((['router', 'api'].includes(action.type) && !action.target) || (action.type === 'custom' && !action.action)) {
+          // 必选参数非法
+          return
+        }
         if (action.type === 'custom' || (action.type === 'router' && ['commonBiz', 'commonBizEdit'].includes(action.target.name))) {
           params = {
             bizPageId: this.page.bizPageId
@@ -477,6 +481,10 @@ export default {
           params = Object.assign({}, params, data)
         }
       } else if (type === 'batchAction') {
+        if ((action.type === 'api' && !action.target) || (action.type === 'custom' && !action.action) || !action.data) {
+          // 必选参数非法
+          return
+        }
         params = action.data(data, this)
       }
       // 执行操作
